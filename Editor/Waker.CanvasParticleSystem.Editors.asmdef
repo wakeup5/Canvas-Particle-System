@@ -1,0 +1,16 @@
+{
+    "name": "Waker.CanvasParticleSystem.Editors",
+    "rootNamespace": "Waker",
+    "references": [
+        "Waker.CanvasParticleSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

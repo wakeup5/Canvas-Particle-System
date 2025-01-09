@@ -1,0 +1,10 @@
+{
+  "name": "com.waker.canvasparticlesystem",
+  "displayName": "Canvas Particle System",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "",
+  "type": "",
+  "dependencies": {
+  }
+}
