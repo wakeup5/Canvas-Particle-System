@@ -10,43 +10,81 @@ namespace Waker
     public partial class CanvasParticleSystem : MonoBehaviour
     {
         [Header("Main")]
-        [SerializeField] private float _duration = 1f;
-        [SerializeField] private bool _loop = true;
+        
+        [SerializeField] 
+        private float _duration = 1f;
+        
+        [SerializeField] 
+        private bool _loop = true;
+
 
         [Header("Particle")]
-        [SerializeField] private Color _color;
-        [SerializeField] private ParticleSystem.MinMaxCurve _startLifetime = new ParticleSystem.MinMaxCurve(1f);
-        [SerializeField] private ParticleSystem.MinMaxCurve _startSize = new ParticleSystem.MinMaxCurve(100f);
-        [SerializeField] private ParticleSystem.MinMaxCurve _startSpeed = new ParticleSystem.MinMaxCurve(100f);
-        [SerializeField] private ParticleSystem.MinMaxCurve _startRotation = new ParticleSystem.MinMaxCurve(100f);
+        
+        [SerializeField] 
+        private Color _color;
+        
+        [SerializeField] 
+        private ParticleSystem.MinMaxCurve _startLifetime = new ParticleSystem.MinMaxCurve(1f);
+        
+        [SerializeField] 
+        private ParticleSystem.MinMaxCurve _startSize = new ParticleSystem.MinMaxCurve(100f);
+        
+        [SerializeField] 
+        private ParticleSystem.MinMaxCurve _startSpeed = new ParticleSystem.MinMaxCurve(100f);
+        
+        [SerializeField] 
+        private ParticleSystem.MinMaxCurve _startRotation = new ParticleSystem.MinMaxCurve(100f);
 
         [Header("Emit")]
-        [SerializeField] private int _emitCountPerSecond = 10;
+        
+        [SerializeField] 
+        private int _emitCountPerSecond = 10;
+
 
         [Header("Sharp")]
-        [SerializeField] private SharpModule _sharpModule;
+        
+        [SerializeField] 
+        private SharpModule _sharpModule;
 
 
         [Header("Texture")]
-        [SerializeField] private Sprite _sprite;
-        [SerializeField] private Material _material;
-        [SerializeField] private SpriteSheetModule _spriteSheet;
+        
+        [SerializeField] 
+        private Sprite _sprite;
+        
+        [SerializeField] 
+        private Material _material;
+
+
+        [Header("Sprite Sheet Animation")]
+        
+        [SerializeField] private SpriteSheetAnimationModule _spriteSheet;
+
+
+        [Header("Attractor")]
+        
         [SerializeField] private AttractorModule _attractor;
+
+
+        [Header("Size Over LifeTime")]
+
         [SerializeField] private SizeOverLifeTimeModule _sizeOverLifeTime;
 
-
+        // Components
         private Canvas _canvas;
         private CanvasRenderer _canvasRenderer;
         private RectTransform _rectTransform;
     
+        // Particles
         private Particle[] _particles = new Particle[256];
-
+    
         // Rendering
         private UIVertex[] _vertex = new UIVertex[4];
 
         private VertexHelper _vertexHelper;
         private Mesh _renderMesh;
 
+        // State
         private float _playTime;
         private float _prevPlayTime;
 
@@ -321,7 +359,6 @@ namespace Waker
             }
 
 #if UNITY_EDITOR
-            // 에디터에서 변경 사항을 즉시 반영
             if (!Application.isPlaying)
             {
                 UnityEditor.EditorUtility.SetDirty(this);
@@ -331,6 +368,7 @@ namespace Waker
 
         private Rect MainSpriteRect()
         {
+            // TODO: caching main sprite rect
             if (_sprite == null)
             {
                 return new Rect(0, 0, 1, 1);
@@ -409,7 +447,7 @@ namespace Waker
             public float lifeTime;
             public float remainLifeTime;
 
-            public void WriteToUIVertext(UIVertex[] vertex, Rect rect)
+            public readonly void WriteToUIVertext(UIVertex[] vertex, Rect rect)
             {
                 if (vertex.Length != 4)
                 {
@@ -420,10 +458,12 @@ namespace Waker
                 Vector2 position = this.renderPosition;
                 float halfSize = this.renderSize * 0.5f;
 
-                vertex[0].position = position + (Vector2)(Quaternion.Euler(0f, 0f, rotation) * new Vector2(-halfSize, -halfSize));
-                vertex[1].position = position + (Vector2)(Quaternion.Euler(0f, 0f, rotation) * new Vector2(-halfSize, halfSize));
-                vertex[2].position = position + (Vector2)(Quaternion.Euler(0f, 0f, rotation) * new Vector2(halfSize, halfSize));
-                vertex[3].position = position + (Vector2)(Quaternion.Euler(0f, 0f, rotation) * new Vector2(halfSize, -halfSize));
+                Quaternion r = Quaternion.Euler(0f, 0f, rotation);
+
+                vertex[0].position = position + (Vector2)(r * new Vector2(-halfSize, -halfSize));
+                vertex[1].position = position + (Vector2)(r * new Vector2(-halfSize, halfSize));
+                vertex[2].position = position + (Vector2)(r * new Vector2(halfSize, halfSize));
+                vertex[3].position = position + (Vector2)(r * new Vector2(halfSize, -halfSize));
 
                 vertex[0].color = color;
                 vertex[1].color = color;
@@ -451,343 +491,4 @@ namespace Waker
         }
 
     }
-
-    #region SpriteSheetModule
-    public partial class CanvasParticleSystem
-    {
-        public enum SpriteSheetSpeedType
-        {
-            Cycle,
-            FPS,
-        }
-
-        [System.Serializable]
-        public class SpriteSheetModule
-        {
-            [SerializeField] private bool _enabled;
-            [SerializeField] private Vector2Int _sheetSize = new Vector2Int(1, 1);
-            [SerializeField] private SpriteSheetSpeedType _sheetSpeedType = SpriteSheetSpeedType.Cycle;
-            [SerializeField] private int _sheetCycle = 1;
-            [SerializeField] private float _sheetFPS = 1f;
-
-            public bool Enabled { get => _enabled; set => _enabled = value; }
-
-            public Vector2Int SheetSize { get => _sheetSize; set => _sheetSize = value; }
-            public SpriteSheetSpeedType SheetSpeedType { get => _sheetSpeedType; set => _sheetSpeedType = value; }
-            public int SheetCycle { get => _sheetCycle; set => _sheetCycle = value; }
-            public float SheetFPS { get => _sheetFPS; set => _sheetFPS = value; }
-            
-            public Rect GetSpriteSheetRect(Rect fullRect, float lifeTime, float remainLifeTime)
-            {
-                if (!Enabled)
-                {
-                    return fullRect;
-                }
-
-                int sheetCycle = SheetCycle;
-
-                switch (SheetSpeedType)
-                {
-                    case SpriteSheetSpeedType.Cycle:
-                        return CalculateLifeTimeSpriteSheetFrameRect(fullRect, SheetSize, sheetCycle, 1f - remainLifeTime / lifeTime);
-                    case SpriteSheetSpeedType.FPS:
-                        return CalculateFPSSpriteSheetFrameRect(fullRect, SheetSize, SheetFPS, lifeTime - remainLifeTime);
-                    default:
-                        return fullRect;
-                }
-            }
-
-            private static Rect CalculateFPSSpriteSheetFrameRect(Rect fullRect, Vector2Int sheetSize, float fps, float age)
-            {
-                int totalFrame = sheetSize.x * sheetSize.y;
-
-                if (totalFrame <= 0)
-                {
-                    return fullRect;
-                }
-
-                int index = (int)(age * fps) % totalFrame;
-                
-                return CalculateSpriteSheetRect(fullRect, sheetSize, index);
-            }
-
-            private static Rect CalculateLifeTimeSpriteSheetFrameRect(Rect fullRect, Vector2Int sheetSize, int cycle, float lifeTimeRatio)
-            {
-                int totalFrame = sheetSize.x * sheetSize.y;
-
-                if (totalFrame <= 0)
-                {
-                    return fullRect;
-                }
-
-                int cycleFrame = totalFrame * cycle;
-                int index = (int)(lifeTimeRatio * cycleFrame) % totalFrame;
-
-                return CalculateSpriteSheetRect(fullRect, sheetSize, index);
-            }
-
-            private static Rect CalculateSpriteSheetRect(Rect fullRect, Vector2Int sheetSize, int index)
-            {
-                Rect rect = fullRect;
-
-                int horizontalFrame = sheetSize.x;
-                int verticalFrame = sheetSize.y;
-
-                if (horizontalFrame <= 0 || verticalFrame <= 0)
-                {
-                    return rect;
-                }
-
-                int totalFrame = horizontalFrame * verticalFrame;
-                int i = index % totalFrame;
-
-                float x = rect.x;
-                float y = rect.y;
-                float width = rect.width;
-                float height = rect.height;
-
-                float sheetWidth = width / horizontalFrame;
-                float sheetHeight = height / verticalFrame;
-
-                int row = i / horizontalFrame;
-                int col = i % horizontalFrame;
-
-                row = sheetSize.y - 1 - row;
-
-                x += sheetWidth * col;
-                y += sheetHeight * row;
-
-                return new Rect(x, y, sheetWidth, sheetHeight);
-            }
-        }
-    }
-    #endregion
-
-    #region SharpModule
-    public partial class CanvasParticleSystem
-    {
-        public enum SharpType
-        {
-            Point,
-            Circle,
-            Rectangle,
-            Edge,
-        }
-
-        public enum SharpSpawnMode
-        {
-            Random,
-            Sequence,
-        }
-
-        [System.Serializable]
-        public class SharpModule
-        {
-            [SerializeField] private bool _enabled = true;
-            [SerializeField] private SharpType _sharpType = SharpType.Point;
-            [SerializeField] private SharpSpawnMode _sharpSpawnMode = SharpSpawnMode.Random;
-            [SerializeField] private int _sharpSpawnSpeed = 1;
-
-            // Circle
-            [SerializeField] private float _circleRadius = 1f;
-
-            // Others
-            [SerializeField] private bool _randomDirection = false;
-
-            public bool Enabled { get => _enabled; set => _enabled = value; }
-            public SharpType SharpType { get => _sharpType; set => _sharpType = value; }
-            public SharpSpawnMode SharpSpawnMode { get => _sharpSpawnMode; set => _sharpSpawnMode = value; }
-            public int SharpSpawnSpeed { get => _sharpSpawnSpeed; set => _sharpSpawnSpeed = value; }
-            public float CircleRadius { get => _circleRadius; set => _circleRadius = value; }
-            public bool RandomDirection { get => _randomDirection; set => _randomDirection = value; }
-
-            // x, y: 위치, z: 이동 방향(각도)
-            public Vector4 GetStartPositionAndRotation(float time)
-            {
-                if (!Enabled)
-                {
-                    return Vector4.zero;
-                }
-
-                if (SharpType == SharpType.Point)
-                {
-                    float directionAngle = GetDirection(Vector2.zero);
-                    return new Vector4(0, 0, directionAngle, 0);
-                }
-
-                if (SharpType == SharpType.Circle)
-                {
-                    return GetCirclePosition(time);
-                }
-
-                return Vector4.zero;
-            }
-
-            private Vector4 GetCirclePosition(float time)
-            {
-                if (SharpSpawnMode == SharpSpawnMode.Random)
-                {
-                    Vector2 position = Random.insideUnitCircle * CircleRadius;
-                    float directionAngle = GetDirection(position);
-
-                    return new Vector4(position.x, position.y, directionAngle, 0);
-                }
-                else
-                {
-                    float angle = time * SharpSpawnSpeed * Mathf.PI * 2f;
-                    float direction = GetDirection(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)));
-
-                    Vector2 position = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * CircleRadius;
-                    float directionAngle = GetDirection(position);
-
-                    return new Vector4(position.x, position.y, directionAngle, direction);
-                }
-            }
-
-            private float GetDirection(Vector2 position)
-            {
-                if (RandomDirection)
-                {
-                    return Random.Range(0f, 360f);
-                }
-                else if (position.sqrMagnitude < 0.0001f)
-                {
-                    return 0f;
-                }
-                else
-                {
-                    return Mathf.Atan2(position.y, position.x) * Mathf.Rad2Deg;
-                }
-            }
-        }
-    }
-
-    #endregion
-
-    #region Attractor
-
-    public partial class CanvasParticleSystem
-    {
-        [System.Serializable]
-        public class AttractorModule
-        {
-            [SerializeField] private bool _enabled;
-            [SerializeField] private Transform _attractor;
-            [SerializeField] private AnimationCurve _attractorCurve = AnimationCurve.Linear(0, 0, 1, 1);
-
-            private bool Enabled
-            {
-                get => _enabled; 
-                set => _enabled = value; 
-            }
-            
-            private AnimationCurve AttractorCurve 
-            {
-                get => _attractorCurve; 
-                set => _attractorCurve = value; 
-            }
-            
-            private Transform Attractor 
-            { 
-                get => _attractor; 
-                set => _attractor = value; 
-            }
-
-            private Vector3 _cachedPosition;
-            private Vector2 _destination;
-
-            public void UpdateParticle(ref Particle particle, Canvas canvas, RectTransform origin)
-            {
-                if (!Enabled)
-                {
-                    return;
-                }
-
-                if (CheckAttractor())
-                {
-                    if (Attractor is RectTransform rectTransform)
-                    {
-                        // rectTransform의 위치를 Canvas 기준으로 변환 후 파티클 기준으로 다시 변환
-                        Vector2 position = rectTransform.position;
-
-                        RectTransformUtility.ScreenPointToLocalPointInRectangle(origin, position, canvas.worldCamera, out Vector2 localPosition);
-
-                        _destination = localPosition;
-                    }
-                    else
-                    {
-                        // TODO: Add more types
-                        _destination = Attractor.position;
-                    }
-                }
-
-                float t = AttractorCurve.Evaluate(1f - particle.remainLifeTime / particle.lifeTime);
-                particle.renderPosition = ExtendedLerp(particle.position, _destination, t);
-            }
-
-            private float ExtendedLerp(float a, float b, float t)
-            {
-                return a + (b - a) * t;
-            }
-
-            private Vector2 ExtendedLerp(Vector2 a, Vector2 b, float t)
-            {
-                return a + (b - a) * t;
-            }
-
-            private bool CheckAttractor()
-            {
-                if (Attractor == null)
-                {
-                    return false;
-                }
-
-                if (_cachedPosition != Attractor.position)
-                {
-                    _cachedPosition = Attractor.position;
-                    return true;
-                }
-
-                return false;
-            }
-        }
-    }
-
-    #endregion
-
-    #region Size Over LiveTime
-
-    public partial class CanvasParticleSystem
-    {
-        [System.Serializable]
-        public class SizeOverLifeTimeModule
-        {
-            [SerializeField] private bool _enabled;
-            [SerializeField] private AnimationCurve _curve = AnimationCurve.Linear(0, 1, 1, 1);
-
-            public bool Enabled
-            {
-                get => _enabled;
-                set => _enabled = value;
-            }
-
-            public AnimationCurve Curve
-            {
-                get => _curve;
-                set => _curve = value;
-            }
-
-            public void UpdateParticle(ref Particle particle)
-            {
-                if (!Enabled)
-                {
-                    return;
-                }
-
-                particle.renderSize = particle.size * _curve.Evaluate(1f - particle.remainLifeTime / particle.lifeTime);
-            }
-        }
-    }
-
-    #endregion
 }
