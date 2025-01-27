@@ -141,6 +141,7 @@ namespace Waker
         {
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.update += EditorUpdate;
+            _lastEditorTime = (float)UnityEditor.EditorApplication.timeSinceStartup;
 #endif
         }
 
@@ -182,10 +183,15 @@ namespace Waker
                 return;
             }
 
-            UpdateParticles();
+            UpdateParticles(Time.deltaTime);
+
+            CreateMesh();
+            UpdateRenderer();
         }
 
 #if UNITY_EDITOR
+        private float _lastEditorTime; // 이전 업데이트 시간
+
         private void EditorUpdate()
         {
             if (Application.isPlaying)
@@ -198,10 +204,18 @@ namespace Waker
                 return;
             }
 
-            UpdateParticles();
+            // deltaTime 계산
+            float currentTime = (float)UnityEditor.EditorApplication.timeSinceStartup;
+            float deltaTime = currentTime - _lastEditorTime;
+            _lastEditorTime = currentTime;
+
+            // deltaTime을 사용하여 파티클 업데이트
+            UpdateParticles(deltaTime);
 
             CreateMesh();
             UpdateRenderer();
+
+            // 에디터 씬 뷰 갱신
             UnityEditor.SceneView.RepaintAll();
         }
 #endif
@@ -213,8 +227,7 @@ namespace Waker
                 return;
             }
 
-            CreateMesh();
-            UpdateRenderer();
+            
         }
 
         private void OnDrawGizmosSelected()
@@ -229,7 +242,7 @@ namespace Waker
             }    
         }
 
-        private void UpdateParticles()
+        private void UpdateParticles(float deltaTime)
         {
             if (_particles == null)
             {
@@ -241,7 +254,6 @@ namespace Waker
                 return;
             }
 
-            float deltaTime = Time.deltaTime;
             _playTime += deltaTime;
 
             if (_playTime > _duration)
@@ -270,7 +282,7 @@ namespace Waker
                 {
                     _particles[i].Update(deltaTime);
 
-                    _attractor.UpdateParticle(ref _particles[i], _canvas, _rectTransform);
+                    _attractor.UpdateParticle(ref _particles[i], _rectTransform);
                     _sizeOverLifeTime.UpdateParticle(ref _particles[i]);
                 }
             }
@@ -343,7 +355,7 @@ namespace Waker
                 {
                     Rect rect = GetSpriteRect(_particles[i].lifeTime, _particles[i].remainLifeTime);
 
-                    _particles[i].WriteToUIVertext(_vertex, rect);
+                    _particles[i].WriteToUIVertexs(_vertex, rect);
                     _vertexHelper.AddUIVertexQuad(_vertex);
                 }
             }
@@ -434,20 +446,25 @@ namespace Waker
     {
         public struct Particle
         {
+            public float lifeTime;
+            public Vector2 startPosition;
+            public float startRotation;
+            public Vector2 startSize;
+
+            public float remainLifeTime;
             public Vector2 position;
             public float size;
             public float rotation;
             public Color32 color;
 
-            public Vector2 renderPosition;
-            public float renderSize;
+            public Vector2 finalPosition;
+            public Vector3 finalRotation;
+            public float finalSize;
 
             public Vector2 velocity;
 
-            public float lifeTime;
-            public float remainLifeTime;
 
-            public readonly void WriteToUIVertext(UIVertex[] vertex, Rect rect)
+            public readonly void WriteToUIVertexs(UIVertex[] vertex, Rect rect)
             {
                 if (vertex.Length != 4)
                 {
@@ -455,8 +472,8 @@ namespace Waker
                     return;
                 }
 
-                Vector2 position = this.renderPosition;
-                float halfSize = this.renderSize * 0.5f;
+                Vector2 position = this.finalPosition;
+                float halfSize = this.finalSize * 0.5f;
 
                 Quaternion r = Quaternion.Euler(0f, 0f, rotation);
 
@@ -485,8 +502,8 @@ namespace Waker
                 remainLifeTime -= deltaTime;
                 position += velocity * deltaTime;
 
-                renderPosition = position;
-                renderSize = size;
+                finalPosition = position;
+                finalSize = size;
             }
         }
 

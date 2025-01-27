@@ -2,13 +2,36 @@ using UnityEngine;
 
 namespace Waker
 {
+    public enum SpriteSheetAnimationTimeMode    
+    {
+        Cycle,
+        FPS,
+    }
+
+    [System.Serializable]
+    public class SpriteSheetAnimation
+    {
+        [SerializeField] private Vector2Int _tile = new Vector2Int(1, 1);
+        [SerializeField] private SpriteSheetAnimationTimeMode _mode;
+        [SerializeField] private int _animationCycle = 1;
+        [SerializeField] private int _animationFPS = 1;
+
+        public Vector2Int Tile
+        {
+            get => _tile;
+            set => _tile = value;
+        }
+
+        public SpriteSheetAnimationTimeMode Mode
+        {
+            get => _mode;
+            set => _mode = value;
+        }
+    }
+
     public partial class CanvasParticleSystem
     {
-        public enum ParticleSpriteSheetAnimationTimeMode
-        {
-            Cycle,
-            FPS,
-        }
+        
 
         [System.Serializable]
         public class SpriteSheetAnimationModule
@@ -20,7 +43,7 @@ namespace Waker
             private Vector2Int _tileSize = new Vector2Int(1, 1);
             
             [SerializeField] 
-            private ParticleSpriteSheetAnimationTimeMode _animationMode = ParticleSpriteSheetAnimationTimeMode.Cycle;
+            private SpriteSheetAnimationTimeMode _animationMode = SpriteSheetAnimationTimeMode.Cycle;
             
             [SerializeField] 
             private int _animationCycle = 1;
@@ -40,7 +63,7 @@ namespace Waker
                 set => _tileSize = value; 
             }
             
-            public ParticleSpriteSheetAnimationTimeMode AnimationMode 
+            public SpriteSheetAnimationTimeMode AnimationMode 
             {
                 get => _animationMode; 
                 set => _animationMode = value; 
@@ -73,9 +96,9 @@ namespace Waker
             {
                 switch (AnimationMode)
                 {
-                    case ParticleSpriteSheetAnimationTimeMode.Cycle:
+                    case SpriteSheetAnimationTimeMode.Cycle:
                         return GetCycleIndex(fullRect, TileSize, AnimationCycle, 1f - remainLifeTime / lifeTime);
-                    case ParticleSpriteSheetAnimationTimeMode.FPS:
+                    case SpriteSheetAnimationTimeMode.FPS:
                         return GetFPSIndex(fullRect, TileSize, AnimationFPS, lifeTime - remainLifeTime);
                     default:
                         return 0;

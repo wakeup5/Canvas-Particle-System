@@ -12,6 +12,9 @@ namespace Waker
             
             [SerializeField] 
             private RectTransform _attractor;
+
+            [SerializeField]
+            private Camera _camera;
             
             [SerializeField] 
             private AnimationCurve _attractorCurve = AnimationCurve.Linear(0, 0, 1, 1);
@@ -36,7 +39,7 @@ namespace Waker
 
             private Vector2 _destination;
 
-            public void UpdateParticle(ref Particle particle, Canvas canvas, RectTransform origin)
+            public void UpdateParticle(ref Particle particle, RectTransform origin)
             {
                 if (!Enabled)
                 {
@@ -48,10 +51,10 @@ namespace Waker
                     return;
                 }
 
-                UpdateDestination(canvas, origin);
+                UpdateDestination(origin);
 
                 float t = AttractorCurve.Evaluate(1f - particle.remainLifeTime / particle.lifeTime);
-                particle.renderPosition = ExtendedLerp(particle.position, _destination, t);
+                particle.finalPosition = ExtendedLerp(particle.position, _destination, t);
             }
 
             private float ExtendedLerp(float a, float b, float t)
@@ -64,11 +67,11 @@ namespace Waker
                 return a + (b - a) * t;
             }
 
-            private void UpdateDestination(Canvas canvas, RectTransform origin)
+            private void UpdateDestination(RectTransform origin)
             {
                 Vector2 position = Attractor.position;
 
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(origin, position, canvas.worldCamera, out Vector2 localPosition);
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(origin, position, _camera, out Vector2 localPosition);
 
                 _destination = localPosition;
             }

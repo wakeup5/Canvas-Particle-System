@@ -32,7 +32,7 @@ namespace Waker
                     return;
                 }
 
-                particle.renderSize = particle.size * _curve.Evaluate(1f - particle.remainLifeTime / particle.lifeTime);
+                particle.finalSize = particle.size * _curve.Evaluate(1f - particle.remainLifeTime / particle.lifeTime);
             }
         }
     }
